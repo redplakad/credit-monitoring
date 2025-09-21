@@ -46,10 +46,10 @@ return new class extends Migration
             $table->string('TGL_AKHIR_BAYAR')->nullable();
             $table->string('JENIS_JAMINAN')->nullable();
             $table->decimal('NILAI_LEGALITAS', 15, 2)->nullable();
-            $table->string('IMPORT_BY');
+            $table->unsignedBigInteger('IMPORT_BY')->nullable();
             $table->timestamps();
             
-            $table->foreign('CAB')->references('branch_code')->on('branches');
+            $table->foreign('IMPORT_BY')->references('id')->on('users')->onDelete('set null');
             $table->index(['DATADATE', 'CAB']);
             $table->index(['NOMOR_REKENING']);
             $table->index(['NO_CIF']);

@@ -33,8 +33,12 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 
-import { Toaster } from '@/components/ui/sonner';
-import { toast } from 'vue-sonner';
+import { Toaster, toast } from "vue-sonner";
+import 'vue-sonner/style.css'; // vue-sonner v2 requires this import
+
+// State untuk upload progress
+const uploadProgress = ref(0);
+const uploading = ref(false);
 
 interface MasterRow {
   DATADATE: string;
@@ -62,12 +66,72 @@ const importSchema = toTypedSchema(
   })
 );
 
-function onImportSubmit(values: any) {
-  toast.success('Import berhasil dimulai', {
-    description: `DATADATE: ${values.datadate}, File: ${values.file?.name || 'N/A'}`,
-  });
-  showImportModal.value = false;
+
+// ...existing code...
+async function onImportSubmit(values: any) {
+  if (!values.file || !values.datadate) return;
+
+  uploading.value = true;
+  uploadProgress.value = 0;
+
+  try {
+    const formData = new FormData();
+    formData.append('file', values.file);
+    formData.append('datadate', values.datadate);
+
+    // Ambil token CSRF dari meta tag
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+    await new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', '/api/master-data/import');
+      xhr.setRequestHeader('Accept', 'application/json');
+      if (csrfToken) {
+        xhr.setRequestHeader('X-CSRF-TOKEN', csrfToken);
+      }
+
+      // Penting: agar cookie session dikirim!
+      xhr.withCredentials = true;
+
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          uploadProgress.value = Math.round((e.loaded / e.total) * 100);
+        }
+      };
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve(xhr.response);
+        } else {
+          try {
+            const error = JSON.parse(xhr.responseText);
+            reject(error.message || 'Upload gagal');
+          } catch {
+            reject(xhr.responseText || 'Upload gagal');
+          }
+        }
+      };
+
+      xhr.onerror = () => reject('Upload gagal, periksa koneksi atau server.');
+      xhr.send(formData);
+    });
+
+    toast.success('File CSV berhasil diupload', {
+      description: 'Proses import berjalan di background.'
+    });
+
+    showImportModal.value = false;
+  } catch (e: any) {
+    toast.error('Gagal upload file', {
+      description: typeof e === 'string' ? e : 'Terjadi kesalahan saat upload file.'
+    });
+  } finally {
+    uploading.value = false;
+    uploadProgress.value = 0;
+  }
 }
+// ...existing code...
+
 
 const deleteDate = ref('');
 const confirmDate = ref('');
@@ -88,7 +152,7 @@ const fetchData = async () => {
     meta.value = result.meta;
   } catch (e) {
     toast.error('Gagal memuat data', {
-      description: 'Terjadi kesalahan saat memuat data master.',
+      description: 'Terjadi kesalahan saat memuat data master.'
     });
   } finally {
     loading.value = false;
@@ -104,14 +168,14 @@ const handleDelete = async () => {
     const res = await fetch(`/api/master-data/${deleteDate.value}`, { method: 'DELETE' });
     if (!res.ok) throw new Error('Gagal menghapus data');
     toast.success('Data berhasil dihapus', {
-      description: `DATADATE ${deleteDate.value} telah dihapus.`,
+      description: `DATADATE ${deleteDate.value} telah dihapus.`
     });
     showDeleteModal.value = false;
     fetchData();
   } catch (e) {
     deleteError.value = 'Gagal menghapus data.';
     toast.error('Gagal menghapus data', {
-      description: 'Terjadi kesalahan saat menghapus data.',
+      description: 'Terjadi kesalahan saat menghapus data.'
     });
   }
 };
@@ -123,7 +187,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <Toaster richColors closeButton />
+  <Toaster position="top-right" richColors closeButton />
   <AppLayout :breadcrumbs="breadcrumbs">
     <Head title="Master Data" />
     <div class="space-y-6 p-6 bg-transparent">
@@ -140,6 +204,9 @@ onMounted(() => {
 
       <Dialog v-model:open="showImportModal">
         <DialogContent class="sm:max-w-[425px]">
+          <template #overlay>
+            <div @mousedown.stop @click.stop></div>
+          </template>
           <DialogHeader>
             <DialogTitle>Import Data Nominatif</DialogTitle>
             <DialogDescription>
@@ -162,17 +229,25 @@ onMounted(() => {
                 <FormItem>
                   <FormLabel>File</FormLabel>
                   <FormControl>
-                    <Input type="file" @change="e => setFieldValue('file', e.target.files[0])" />
+                    <Input type="file" @change="e => setFieldValue('file', (e.target as HTMLInputElement).files?.[0])" />
                   </FormControl>
                   <FormDescription>Upload file nominatif (.csv)</FormDescription>
                   <FormMessage />
                 </FormItem>
               </FormField>
+
+              <div v-if="uploading" class="w-full mt-2">
+                <div class="mb-1 text-xs text-gray-500">Mengupload file... ({{ uploadProgress }}%)</div>
+                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                  <div class="bg-blue-600 h-2.5 rounded-full" :style="{ width: uploadProgress + '%' }"></div>
+                </div>
+              </div>
             </form>
           </Form>
           <DialogFooter>
-            <Button type="submit" form="importDialogForm">
-              Import
+            <Button type="submit" form="importDialogForm" :disabled="uploading">
+              <span v-if="uploading">Mengupload...</span>
+              <span v-else>Import</span>
             </Button>
           </DialogFooter>
         </DialogContent>

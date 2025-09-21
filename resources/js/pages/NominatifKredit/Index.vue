@@ -1,3 +1,5 @@
+// Agar filterLabels dan selectedFilters bisa diakses di template
+defineExpose({ filterLabels, selectedFilters })
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head } from '@inertiajs/vue3';
@@ -23,15 +25,8 @@ import {
 import { Button } from '@/components/ui/button'
 
 import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import Multiselect from 'vue-multiselect'
+import 'vue-multiselect/dist/vue-multiselect.min.css'
 import {
   Dialog,
   DialogContent,
@@ -78,13 +73,13 @@ const isDetailModalOpen = ref(false)
 
 const filters = reactive({
   search: '',
-  cabang: '',
-  ket_kd_prd: '',
-  kode_kolek: '',
-  ao: '',
+  cabang: [] as string[],
+  ket_kd_prd: [] as string[],
+  kode_kolek: [] as string[],
+  ao: [] as string[],
   sort_by: '',
   sort_order: 'asc',
-  per_page: 10,
+  per_page: 20,
   page: 1
 })
 
@@ -118,7 +113,11 @@ const fetchData = async () => {
   try {
     const params = new URLSearchParams()
     Object.entries(filters).forEach(([key, value]) => {
-      if (value && value !== '') {
+      if (Array.isArray(value)) {
+        if (value.length > 0) {
+          params.append(key, value.join(','))
+        }
+      } else if (value && value !== '') {
         params.append(key, String(value))
       }
     })
@@ -173,10 +172,10 @@ const handlePageChange = (page: number) => {
 const clearFilters = () => {
   Object.assign(filters, {
     search: '',
-    cabang: '',
-    ket_kd_prd: '',
-    kode_kolek: '',
-    ao: '',
+    cabang: [],
+    ket_kd_prd: [],
+    kode_kolek: [],
+    ao: [],
     sort_by: '',
     sort_order: 'asc',
     page: 1
@@ -194,14 +193,23 @@ const paginationNumbers = computed(() => {
   return pages
 })
 
-watch(() => filters, () => {
-  filters.page = 1
-  fetchData()
-}, { deep: true })
 
-watch(() => filters.page, () => {
-  fetchData()
-})
+// Watch selain page, reset page ke 1 dan fetch data
+watch(
+  () => [filters.search, filters.cabang, filters.ket_kd_prd, filters.kode_kolek, filters.ao, filters.sort_by, filters.sort_order, filters.per_page],
+  () => {
+    filters.page = 1
+    fetchData()
+  },
+  { deep: true }
+)
+// Watch page saja, fetch data
+watch(
+  () => filters.page,
+  () => {
+    fetchData()
+  }
+)
 
 onMounted(() => {
   fetchData()
@@ -216,30 +224,30 @@ onMounted(() => {
         <div class="flex items-center justify-between">
           <h1 class="text-3xl font-bold tracking-tight">Nominatif Kredit</h1>
         </div>
-        <div class="flex flex-wrap gap-2 items-center">
-          <form @submit.prevent="fetchData" class="flex w-full max-w-sm items-center gap-1.5">
-            <Input v-model="filters.search" placeholder="Cari rekening, nama, CIF, AO..." />
-            <Button type="submit">Cari</Button>
-          </form>
-          <Select v-model="filters.cabang" :options="[{label:'Semua Cabang',value:''},...filterOptions.cabang.map(c=>({label:c,value:c}))]" class="w-40" />
-          <Select v-model="filters.ket_kd_prd" :options="[{label:'Semua Product',value:''},...filterOptions.ket_kd_prd.map(p=>({label:p,value:p}))]" class="w-40" />
-          <Select v-model="filters.kode_kolek" :options="[{label:'Semua Kolek',value:''},...filterOptions.kode_kolek.map(k=>({label:k,value:k}))]" class="w-40" />
-          <Select v-model="filters.ao" :options="[{label:'Semua AO',value:''},...filterOptions.ao.map(a=>({label:a,value:a}))]" class="w-40" />
-          <Button variant="outline" @click="clearFilters">Reset Filter</Button>
+        <div class="flex flex-col gap-2">
+          <div class="flex flex-wrap md:flex-nowrap gap-2 items-center">
+            <form @submit.prevent="fetchData" class="flex w-full max-w-sm items-center gap-1.5">
+              <Input v-model="filters.search" placeholder="Cari rekening, nama, CIF, AO..." />
+              <Button type="submit">Cari</Button>
+            </form>
+            <Button variant="outline" @click="clearFilters">Reset Filter</Button>
+          </div>
         </div>
+
         <div class="overflow-x-auto">
+        </div>
           <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Cabang</TableHead>
             <TableHead>No. Rekening</TableHead>
             <TableHead>Nama Nasabah</TableHead>
-            <TableHead class="cursor-pointer" @click="handleSort('POKOK_PINJAMAN')">Pokok Pinjaman</TableHead>
-            <TableHead class="cursor-pointer" @click="handleSort('KODE_KOLEK')">Kode Kolek</TableHead>
-            <TableHead class="cursor-pointer" @click="handleSort('KET_KD_PRD')">Product</TableHead>
+            <TableHead class="cursor-pointer text-right" @click="handleSort('POKOK_PINJAMAN')">Bakidebet</TableHead>
+            <TableHead class="cursor-pointer" @click="handleSort('KODE_KOLEK')">Kol</TableHead>
+            <TableHead class="cursor-pointer" @click="handleSort('KET_KD_PRD')">Produk</TableHead>
             <TableHead class="cursor-pointer" @click="handleSort('AO')">AO</TableHead>
-            <TableHead class="cursor-pointer" @click="handleSort('TUNGGAKAN_BUNGA')">Tunggakan Bunga</TableHead>
-            <TableHead class="cursor-pointer" @click="handleSort('TUNGGAKAN_POKOK')">Tunggakan Pokok</TableHead>
+            <TableHead class="cursor-pointer text-right" @click="handleSort('TUNGGAKAN_BUNGA')">T. Bunga</TableHead>
+            <TableHead class="cursor-pointer text-right" @click="handleSort('TUNGGAKAN_POKOK')">T. Pokok</TableHead>
             <TableHead>Aksi</TableHead>
           </TableRow>
         </TableHeader>
@@ -254,12 +262,12 @@ onMounted(() => {
             <TableCell>{{ item.CAB }}</TableCell>
             <TableCell>{{ item.NOMOR_REKENING }}</TableCell>
             <TableCell>{{ item.NAMA_NASABAH }}</TableCell>
-            <TableCell>{{ item.POKOK_PINJAMAN.toLocaleString('id-ID') }}</TableCell>
+            <TableCell class="text-right">{{ Number(item.POKOK_PINJAMAN).toLocaleString('id-ID') }}</TableCell>
             <TableCell>{{ item.KODE_KOLEK }}</TableCell>
             <TableCell>{{ item.KET_KD_PRD }}</TableCell>
             <TableCell>{{ item.AO }}</TableCell>
-            <TableCell>{{ item.TUNGGAKAN_BUNGA.toLocaleString('id-ID') }}</TableCell>
-            <TableCell>{{ item.TUNGGAKAN_POKOK.toLocaleString('id-ID') }}</TableCell>
+            <TableCell class="text-right">{{ Number(item.TUNGGAKAN_BUNGA).toLocaleString('id-ID') }}</TableCell>
+            <TableCell class="text-right">{{ Number(item.TUNGGAKAN_POKOK).toLocaleString('id-ID') }}</TableCell>
             <TableCell>
               <Button variant="ghost" size="sm" @click="showDetail(item)"><Eye class="h-4 w-4" /></Button>
             </TableCell>
@@ -268,10 +276,10 @@ onMounted(() => {
       </Table>
     </div>
     <div class="flex items-center justify-between">
-      <div class="text-sm text-muted-foreground">
+      <div class="text-sm text-muted-foreground pl-6 pb-6">
         Menampilkan {{ meta.from }} sampai {{ meta.to }} dari {{ meta.total }} entri
       </div>
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2 pr-6 pb-6">
         <Button variant="outline" size="sm" :disabled="meta.current_page === 1" @click="handlePageChange(meta.current_page - 1)">Previous</Button>
         <div class="flex items-center gap-1">
           <Button v-for="page in paginationNumbers" :key="page" :variant="page === meta.current_page ? 'default' : 'outline'" size="sm" @click="handlePageChange(page)">{{ page }}</Button>
@@ -303,6 +311,5 @@ onMounted(() => {
         </div>
       </DialogContent>
     </Dialog>
-    </div>
   </AppLayout>
 </template>

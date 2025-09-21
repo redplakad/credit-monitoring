@@ -46,4 +46,48 @@ class MasterDataController extends Controller
         NominatifKredit::where('DATADATE', $datadate)->delete();
         return response()->json(['message' => "Berhasil menghapus $count data dengan DATADATE $datadate"]);
     }
+
+    // Upload & import CSV ke NominatifKredit
+    public function import(Request $request)
+    {
+        \Log::info('[IMPORT] Mulai proses import', [
+            'ip' => $request->ip(),
+            'user_id' => optional($request->user())->id,
+            'datadate' => $request->input('datadate'),
+            'has_file' => $request->hasFile('file'),
+        ]);
+        try {
+            $request->validate([
+                'file' => 'required|file|mimes:csv,txt',
+                'datadate' => 'required|string|max:20',
+            ]);
+            \Log::info('[IMPORT] Validasi sukses', [
+                'datadate' => $request->input('datadate'),
+                'filename' => $request->file('file') ? $request->file('file')->getClientOriginalName() : null,
+            ]);
+            $file = $request->file('file');
+            $datadate = $request->input('datadate');
+            $path = $file->store('imports');
+            \Log::info('[IMPORT] File disimpan', [
+                'path' => $path,
+                'size' => $file->getSize(),
+                'mime' => $file->getMimeType(),
+            ]);
+            $userId = optional($request->user())->id;
+            \App\Jobs\ImportNominatifKreditJob::dispatch($path, $datadate, $userId);
+            \Log::info('[IMPORT] Job dispatch sukses', [
+                'path' => $path,
+                'datadate' => $datadate,
+            ]);
+            return response()->json(['message' => 'File diupload, proses import berjalan di background.']);
+        } catch (\Throwable $e) {
+            \Log::error('[IMPORT] ERROR', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json([
+                'message' => 'Gagal import: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
 }

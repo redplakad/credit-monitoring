@@ -3,6 +3,9 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="csrf-token" content="{{ csrf_token() }}">
+
+        {{-- Preload the appearance preference to avoid a flash of incorrect theme --}}
 
         {{-- Inline script to detect system dark mode preference and apply it immediately --}}
         <script>

@@ -51,7 +51,7 @@ class NominatifKreditController extends Controller
             }
 
             // Pagination
-            $perPage = min($request->get('per_page', 10), 100);
+            $perPage = min($request->get('per_page', 20), 100);
             return $query->paginate($perPage);
         });
 
