@@ -1,6 +1,11 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(npx shadcn-vue:*)"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "shadcn"
-  ],
-  "enableAllProjectMcpServers": true
+  ]
 }
