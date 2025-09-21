@@ -165,7 +165,15 @@ const handleDelete = async () => {
     return;
   }
   try {
-    const res = await fetch(`/api/master-data/${deleteDate.value}`, { method: 'DELETE' });
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    const res = await fetch(`/api/master-data/${deleteDate.value}`, {
+      method: 'DELETE',
+      headers: {
+        'Accept': 'application/json',
+        ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {})
+      },
+      credentials: 'same-origin',
+    });
     if (!res.ok) throw new Error('Gagal menghapus data');
     toast.success('Data berhasil dihapus', {
       description: `DATADATE ${deleteDate.value} telah dihapus.`

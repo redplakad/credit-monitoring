@@ -43,8 +43,9 @@ class MasterDataController extends Controller
         if ($count === 0) {
             return response()->json(['message' => 'Data tidak ditemukan'], 404);
         }
-        NominatifKredit::where('DATADATE', $datadate)->delete();
-        return response()->json(['message' => "Berhasil menghapus $count data dengan DATADATE $datadate"]);
+        // Dispatch job agar delete berjalan di background
+        \App\Jobs\DeleteNominatifKreditByDatadateJob::dispatch($datadate);
+        return response()->json(['message' => "Proses hapus $count data dengan DATADATE $datadate sedang berjalan di background."]);
     }
 
     // Upload & import CSV ke NominatifKredit

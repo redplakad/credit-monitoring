@@ -11,9 +11,20 @@ class NominatifKreditController extends Controller
 {
     public function index(Request $request)
     {
-        $cacheKey = 'nominatif_kredit:' . md5(json_encode($request->all()));
-        $data = Cache::store('redis')->remember($cacheKey, 60, function () use ($request) {
+
+        // Ambil nilai DATADATE terbesar (terbaru)
+        $latestDatadate = Cache::store('redis')->remember('nominatif_kredit:latest_datadate', 60, function () {
+            return NominatifKredit::whereNotNull('DATADATE')->distinct()->orderBy('DATADATE', 'asc')->pluck('DATADATE')->last();
+        });
+
+        $cacheKey = 'nominatif_kredit:' . $latestDatadate . ':' . md5(json_encode($request->all()));
+        $data = Cache::store('redis')->remember($cacheKey, 60, function () use ($request, $latestDatadate) {
             $query = NominatifKredit::query();
+
+            // Hanya data dengan DATADATE terbaru
+            if ($latestDatadate) {
+                $query->where('DATADATE', $latestDatadate);
+            }
 
             // Search
             if ($request->filled('search')) {

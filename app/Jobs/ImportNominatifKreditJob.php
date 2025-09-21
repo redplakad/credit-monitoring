@@ -108,5 +108,18 @@ class ImportNominatifKreditJob implements ShouldQueue
         }
         fclose($handle);
         Log::info('Import CSV selesai: ' . $fullPath);
+
+        // Clear cache nominatif_kredit agar data terbaru langsung tampil
+        try {
+            \Cache::store('redis')->forget('nominatif_kredit:latest_datadate');
+            // Hapus semua cache nominatif_kredit:* (list all keys and delete)
+            $redis = \Cache::store('redis')->getRedis();
+            $keys = $redis->keys('nominatif_kredit:*');
+            foreach ($keys as $key) {
+                $redis->del($key);
+            }
+        } catch (\Throwable $e) {
+            Log::error('Gagal clear cache nominatif_kredit: ' . $e->getMessage());
+        }
     }
 }

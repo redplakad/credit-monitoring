@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('DATADATE');
             $table->string('CAB');
-            $table->string('NOMOR_REKENING')->unique();
+            $table->string('NOMOR_REKENING');
             $table->string('NO_CIF');
             $table->string('NAMA_NASABAH');
             $table->text('ALAMAT');
