@@ -13,3 +13,13 @@ Route::get('dashboard', function () {
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
+
+// Nominatif Kredit Page (Inertia)
+Route::middleware(['auth', 'verified'])->get('nominatif-kredit', function () {
+    return Inertia::render('NominatifKredit/Index');
+})->name('nominatif-kredit.index');
+
+// Master Data Page (Inertia)
+Route::middleware(['auth', 'verified'])->get('master-data', function () {
+    return Inertia::render('MasterData/Index');
+})->name('master-data.index');
