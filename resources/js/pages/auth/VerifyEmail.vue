@@ -1,49 +1,58 @@
 <script setup lang="ts">
-import EmailVerificationNotificationController from '@/actions/App/Http/Controllers/Auth/EmailVerificationNotificationController';
-import TextLink from '@/components/TextLink.vue';
-import { Button } from '@/components/ui/button';
-import AuthLayout from '@/layouts/AuthLayout.vue';
-import { logout } from '@/routes';
-import { Form, Head } from '@inertiajs/vue3';
-import { LoaderCircle } from 'lucide-vue-next';
+import AppLayout from '@/layouts/AppLayout.vue';
+import { Head, Link } from '@inertiajs/vue3';
+import { ref } from 'vue';
+import axios from 'axios';
 
-defineProps<{
-    status?: string;
-}>();
+const processing = ref(false);
+const status = ref('');
+
+const resendVerification = async () => {
+    processing.value = true;
+    try {
+        await axios.post('/email/verification-notification');
+        status.value = 'Link verifikasi sudah dikirim ke email kamu.';
+    } catch (e) {
+        status.value = 'Gagal mengirim ulang verifikasi.';
+    } finally {
+        processing.value = false;
+    }
+};
 </script>
 
 <template>
-    <AuthLayout
-        title="Verify email"
-        description="Please verify your email address by clicking on the link we just emailed to you."
-    >
-        <Head title="Email verification" />
+    <Head title="Verifikasi Email" />
 
-        <div
-            v-if="status === 'verification-link-sent'"
-            class="mb-4 text-center text-sm font-medium text-green-600"
-        >
-            A new verification link has been sent to the email address you
-            provided during registration.
+    <AppLayout>
+        <div class="p-6">
+            <h1 class="text-xl font-bold mb-4">Verifikasi Email</h1>
+
+            <p class="mb-4">
+                Sebelum melanjutkan, silakan cek email kamu untuk link verifikasi.
+                Jika tidak menerima email, kamu bisa kirim ulang.
+            </p>
+
+            <div class="flex items-center gap-4">
+                <button
+                    @click="resendVerification"
+                    :disabled="processing"
+                    class="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50"
+                >
+                    Kirim Ulang Email Verifikasi
+                </button>
+                <Link
+                    href="/logout"
+                    method="post"
+                    as="button"
+                    class="px-4 py-2 bg-gray-600 text-white rounded"
+                >
+                    Logout
+                </Link>
+            </div>
+
+            <p v-if="status" class="mt-4 text-green-600">
+                {{ status }}
+            </p>
         </div>
-
-        <Form
-            v-bind="EmailVerificationNotificationController.store.form()"
-            class="space-y-6 text-center"
-            v-slot="{ processing }"
-        >
-            <Button :disabled="processing" variant="secondary">
-                <LoaderCircle v-if="processing" class="h-4 w-4 animate-spin" />
-                Resend verification email
-            </Button>
-
-            <TextLink
-                :href="logout()"
-                as="button"
-                class="mx-auto block text-sm"
-            >
-                Log out
-            </TextLink>
-        </Form>
-    </AuthLayout>
+    </AppLayout>
 </template>
