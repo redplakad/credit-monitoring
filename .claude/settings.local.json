@@ -2,7 +2,15 @@
   "permissions": {
     "allow": [
       "Bash(npx shadcn-vue:*)",
-      "Bash(composer run:*)"
+      "Bash(composer run:*)",
+      "Bash(tree:*)",
+      "Bash(mkdir:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run dev:*)",
+      "Bash(curl:*)",
+      "Bash(php artisan config:clear:*)",
+      "Bash(php artisan:*)",
+      "Bash(npm install:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

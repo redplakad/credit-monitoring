@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import NewPasswordController from '@/actions/App/Http/Controllers/Auth/NewPasswordController';
+import { newPasswordActions } from '@/helpers/routes/auth';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,7 +25,7 @@ const inputEmail = ref(props.email);
         <Head title="Reset password" />
 
         <Form
-            v-bind="NewPasswordController.store.form()"
+            v-bind="newPasswordActions.store.form()"
             :transform="(data) => ({ ...data, token, email })"
             :reset-on-success="['password', 'password_confirmation']"
             v-slot="{ errors, processing }"

@@ -3,18 +3,14 @@ import vue from '@vitejs/plugin-vue';
 import laravel from 'laravel-vite-plugin';
 import { defineConfig } from 'vite';
 
-export default defineConfig(({ mode }) => ({
-    plugins: [
+export default defineConfig(async ({ mode }) => {
+    const plugins = [
         laravel({
             input: ['resources/js/app.ts'],
             ssr: 'resources/js/ssr.ts',
             refresh: true,
         }),
         tailwindcss(),
-        // Wayfinder hanya untuk dev
-        ...(mode !== 'production'
-            ? [require('@laravel/vite-plugin-wayfinder').wayfinder({ formVariants: true })]
-            : []),
         vue({
             template: {
                 transformAssetUrls: {
@@ -23,5 +19,15 @@ export default defineConfig(({ mode }) => ({
                 },
             },
         }),
-    ],
-}));
+    ];
+
+    // Wayfinder hanya untuk dev
+    if (mode !== 'production') {
+        const { wayfinder } = await import('@laravel/vite-plugin-wayfinder');
+        plugins.push(wayfinder({ formVariants: true }));
+    }
+
+    return {
+        plugins,
+    };
+});

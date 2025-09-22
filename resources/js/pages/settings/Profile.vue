@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
+import { profileActions } from '@/helpers/routes/settings';
 import { edit } from '@/routes/profile';
 import { send } from '@/routes/verification';
 import { Form, Head, Link, usePage } from '@inertiajs/vue3';
@@ -44,7 +44,7 @@ const user = page.props.auth.user;
                 />
 
                 <Form
-                    v-bind="ProfileController.update.form()"
+                    v-bind="profileActions.update.form()"
                     class="space-y-6"
                     v-slot="{ errors, processing, recentlySuccessful }"
                 >

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import PasswordResetLinkController from '@/actions/App/Http/Controllers/Auth/PasswordResetLinkController';
+import { passwordResetActions } from '@/helpers/routes/auth';
 import InputError from '@/components/InputError.vue';
 import TextLink from '@/components/TextLink.vue';
 import { Button } from '@/components/ui/button';
@@ -31,7 +31,7 @@ defineProps<{
 
         <div class="space-y-6">
             <Form
-                v-bind="PasswordResetLinkController.store.form()"
+                v-bind="passwordResetActions.store.form()"
                 v-slot="{ errors, processing }"
             >
                 <div class="grid gap-2">

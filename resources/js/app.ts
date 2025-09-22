@@ -8,6 +8,28 @@ import { initializeTheme } from './composables/useAppearance';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
+// Setup axios defaults for Laravel Sanctum
+import axios from 'axios';
+
+// Configure axios for CSRF and cookies
+axios.defaults.withCredentials = true;
+axios.defaults.baseURL = 'http://localhost:8000';
+
+// Set up axios interceptor to handle CSRF
+axios.interceptors.request.use(async (config) => {
+    // For non-GET requests, ensure we have CSRF cookie
+    if (config.method !== 'get') {
+        const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        if (token) {
+            config.headers['X-CSRF-TOKEN'] = token;
+        }
+    }
+    return config;
+});
+
+// Make axios available globally for debugging
+(window as any).axios = axios;
+
 createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
     resolve: (name) =>
@@ -16,9 +38,13 @@ createInertiaApp({
             import.meta.glob<DefineComponent>('./pages/**/*.vue'),
         ),
     setup({ el, App, props, plugin }) {
-        createApp({ render: () => h(App, props) })
-            .use(plugin)
-            .mount(el);
+        const app = createApp({ render: () => h(App, props) })
+            .use(plugin);
+
+        // Global configuration for Inertia
+        app.config.globalProperties.$http = axios;
+
+        app.mount(el);
     },
     progress: {
         color: '#4B5563',
