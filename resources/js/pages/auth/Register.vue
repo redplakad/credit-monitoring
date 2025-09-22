@@ -19,19 +19,20 @@ const form = useForm({
 });
 
 const submit = async () => {
-    // Get CSRF cookie first for cross-origin requests
-    try {
-        await fetch('http://localhost:8000/sanctum/csrf-cookie', {
-            method: 'GET',
-            credentials: 'include',
-        });
-
-        // Now submit the form
-        form.post('/register');
-    } catch (error) {
-        console.error('Failed to get CSRF cookie:', error);
-        form.post('/register'); // Try anyway
+    // Get CSRF cookie first for cross-origin requests (development only)
+    if (import.meta.env.DEV) {
+        try {
+            await fetch('/sanctum/csrf-cookie', {
+                method: 'GET',
+                credentials: 'include',
+            });
+        } catch (error) {
+            console.error('Failed to get CSRF cookie:', error);
+        }
     }
+
+    // Submit the form
+    form.post('/register');
 };
 </script>
 

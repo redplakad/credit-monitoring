@@ -11,9 +11,22 @@ const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 // Setup axios defaults for Laravel Sanctum
 import axios from 'axios';
 
+// Detect environment and set appropriate base URL
+const isProduction = import.meta.env.PROD;
+const isDevelopment = import.meta.env.DEV;
+
 // Configure axios for CSRF and cookies
 axios.defaults.withCredentials = true;
-axios.defaults.baseURL = 'http://localhost:8000';
+
+// Set base URL based on environment
+if (isProduction) {
+    // In production, use same domain (no need for explicit baseURL)
+    // This will use the same domain as the current page
+    axios.defaults.baseURL = '';
+} else if (isDevelopment) {
+    // In development, use Laravel dev server
+    axios.defaults.baseURL = 'http://localhost:8000';
+}
 
 // Set up axios interceptor to handle CSRF
 axios.interceptors.request.use(async (config) => {
@@ -27,8 +40,10 @@ axios.interceptors.request.use(async (config) => {
     return config;
 });
 
-// Make axios available globally for debugging
-(window as any).axios = axios;
+// Make axios available globally for debugging (only in dev)
+if (isDevelopment) {
+    (window as any).axios = axios;
+}
 
 createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
