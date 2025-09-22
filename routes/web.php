@@ -23,3 +23,10 @@ Route::middleware(['auth', 'verified'])->get('nominatif-kredit', function () {
 Route::middleware(['auth', 'verified'])->get('master-data', function () {
     return Inertia::render('MasterData/Index');
 })->name('master-data.index');
+
+// Master Data Web API routes (uses web session authentication)
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('api/master-data', [\App\Http\Controllers\Api\MasterDataController::class, 'index']);
+    Route::delete('api/master-data/{datadate}', [\App\Http\Controllers\Api\MasterDataController::class, 'destroy']);
+    Route::post('api/master-data/import', [\App\Http\Controllers\Api\MasterDataController::class, 'import']);
+});

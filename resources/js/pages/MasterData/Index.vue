@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Head } from '@inertiajs/vue3';
+import { Head, usePage, router } from '@inertiajs/vue3';
 import { computed, ref, onMounted, h } from 'vue';
 import { dashboard } from '@/routes';
 import type { BreadcrumbItem } from '@/types';
@@ -59,6 +59,17 @@ const meta = ref({ page: 1, per_page: 10, total: 0, last_page: 1 });
 const showDeleteModal = ref(false);
 const showImportModal = ref(false);
 
+// Get user authentication status
+const page = usePage();
+const user = computed(() => page.props.auth?.user);
+
+// Debug authentication status
+onMounted(() => {
+  console.log('Page props:', page.props);
+  console.log('Auth object:', page.props.auth);
+  console.log('User object:', user.value);
+});
+
 const importSchema = toTypedSchema(
   z.object({
     datadate: z.string().min(8, 'Minimal 8 karakter').max(8, 'Maksimal 8 karakter'),
@@ -71,6 +82,21 @@ const importSchema = toTypedSchema(
 async function onImportSubmit(values: any) {
   if (!values.file || !values.datadate) return;
 
+  console.log('Upload attempt - User status:', user.value);
+  console.log('Upload attempt - Auth props:', page.props.auth);
+
+  // Check if user is authenticated
+  if (!user.value) {
+    console.log('No user found, redirecting to login...');
+    toast.error('Sesi login telah berakhir', {
+      description: 'Silakan login ulang untuk melanjutkan.'
+    });
+    router.visit('/login');
+    return;
+  }
+
+  console.log('User authenticated, proceeding with upload...');
+
   uploading.value = true;
   uploadProgress.value = 0;
 
@@ -81,6 +107,8 @@ async function onImportSubmit(values: any) {
 
     // Ambil token CSRF dari meta tag
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+    // No need for CSRF cookie since we're using web routes with session auth
 
     await new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
@@ -102,6 +130,12 @@ async function onImportSubmit(values: any) {
       xhr.onload = () => {
         if (xhr.status >= 200 && xhr.status < 300) {
           resolve(xhr.response);
+        } else if (xhr.status === 401) {
+          reject('Sesi login telah berakhir. Silakan login ulang.');
+          // Redirect to login page after a short delay
+          setTimeout(() => {
+            router.visit('/login');
+          }, 2000);
         } else {
           try {
             const error = JSON.parse(xhr.responseText);
