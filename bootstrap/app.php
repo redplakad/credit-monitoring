@@ -10,6 +10,7 @@ use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
+        api: __DIR__.'/../routes/api.php', // Tambahkan baris ini agar route API terdaftar
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )

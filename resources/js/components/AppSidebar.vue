@@ -14,14 +14,28 @@ import {
 import { dashboard } from '@/routes';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid } from 'lucide-vue-next';
+import { BookOpen, Folder, LayoutGrid, Table } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
+
 
 const mainNavItems: NavItem[] = [
     {
         title: 'Dashboard',
         href: dashboard(),
         icon: LayoutGrid,
+    },
+    {
+        title: 'Nominatif Kredit',
+        href: '/nominatif-kredit',
+        icon: Table,
+    },
+];
+
+const adminNavItems: NavItem[] = [
+    {
+        title: 'Master Data',
+        href: '/master-data',
+        icon: Folder,
     },
 ];
 
@@ -53,8 +67,10 @@ const footerNavItems: NavItem[] = [
             </SidebarMenu>
         </SidebarHeader>
 
+
         <SidebarContent>
             <NavMain :items="mainNavItems" />
+            <NavMain v-if="true" :items="adminNavItems" group-label="Administrator" />
         </SidebarContent>
 
         <SidebarFooter>
