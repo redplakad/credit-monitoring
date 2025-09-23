@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head } from '@inertiajs/vue3';
 import { ref } from 'vue';
-import axios from 'axios';
+import { logout } from '@/api/auth';
 
 const processing = ref(false);
 const status = ref('');
@@ -10,7 +10,7 @@ const status = ref('');
 const resendVerification = async () => {
     processing.value = true;
     try {
-        await axios.post('/email/verification-notification');
+        await fetch('/email/verification-notification', { method: 'POST', credentials: 'include' });
         status.value = 'Link verifikasi sudah dikirim ke email kamu.';
     } catch (e) {
         status.value = 'Gagal mengirim ulang verifikasi.';
@@ -18,8 +18,18 @@ const resendVerification = async () => {
         processing.value = false;
     }
 };
-</script>
 
+const handleLogout = async () => {
+    processing.value = true;
+    try {
+        await logout();
+        window.location.href = '/login';
+    } catch (e) {
+        status.value = 'Logout gagal.';
+    } finally {
+        processing.value = false;
+    }
+};
 <template>
     <Head title="Verifikasi Email" />
 
@@ -40,14 +50,29 @@ const resendVerification = async () => {
                 >
                     Kirim Ulang Email Verifikasi
                 </button>
-                <Link
-                    href="/logout"
-                    method="post"
-                    as="button"
+                <button
+                    @click="handleLogout"
+                    :disabled="processing"
                     class="px-4 py-2 bg-gray-600 text-white rounded"
                 >
                     Logout
-                </Link>
+                </button>
+<script setup lang="ts">
+// ...existing imports...
+import { logout } from '@/api/auth';
+
+const handleLogout = async () => {
+    processing.value = true;
+    try {
+        await logout();
+        window.location.href = '/login';
+    } catch (e) {
+        status.value = 'Logout gagal.';
+    } finally {
+        processing.value = false;
+    }
+};
+</script>
             </div>
 
             <p v-if="status" class="mt-4 text-green-600">

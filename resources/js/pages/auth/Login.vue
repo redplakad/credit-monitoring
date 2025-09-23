@@ -1,5 +1,6 @@
+
 <script setup lang="ts">
-import { loginActions } from '@/helpers/routes/auth';
+import { ref } from 'vue';
 import InputError from '@/components/InputError.vue';
 import TextLink from '@/components/TextLink.vue';
 import { Button } from '@/components/ui/button';
@@ -9,13 +10,33 @@ import { Label } from '@/components/ui/label';
 import AuthBase from '@/layouts/AuthLayout.vue';
 import { register } from '@/routes';
 import { request } from '@/routes/password';
-import { Form, Head } from '@inertiajs/vue3';
+import { Head } from '@inertiajs/vue3';
 import { LoaderCircle } from 'lucide-vue-next';
+import { login } from '@/api/auth';
+import { Inertia } from '@inertiajs/inertia';
 
-defineProps<{
-    status?: string;
-    canResetPassword: boolean;
-}>();
+const email = ref('');
+const password = ref('');
+const remember = ref(false);
+const loading = ref(false);
+const errors = ref<{ email?: string; password?: string }>({});
+
+const handleLogin = async () => {
+    loading.value = true;
+    errors.value = {};
+    try {
+    await login({ email: email.value, password: password.value, remember: remember.value });
+    Inertia.visit('/dashboard');
+    } catch (error: any) {
+        if (error.response && error.response.data && error.response.data.errors) {
+            errors.value = error.response.data.errors;
+        } else {
+            errors.value = { email: 'Login failed' };
+        }
+    } finally {
+        loading.value = false;
+    }
+};
 </script>
 
 <template>
@@ -24,20 +45,7 @@ defineProps<{
         description="Enter your email and password below to log in"
     >
         <Head title="Log in" />
-
-        <div
-            v-if="status"
-            class="mb-4 text-center text-sm font-medium text-green-600"
-        >
-            {{ status }}
-        </div>
-
-        <Form
-            v-bind="loginActions.store.form()"
-            :reset-on-success="['password']"
-            v-slot="{ errors, processing }"
-            class="flex flex-col gap-6"
-        >
+        <form @submit.prevent="handleLogin" class="flex flex-col gap-6">
             <div class="grid gap-6">
                 <div class="grid gap-2">
                     <Label for="email">Email address</Label>
@@ -50,6 +58,7 @@ defineProps<{
                         :tabindex="1"
                         autocomplete="email"
                         placeholder="email@example.com"
+                        v-model="email"
                     />
                     <InputError :message="errors.email" />
                 </div>
@@ -58,7 +67,7 @@ defineProps<{
                     <div class="flex items-center justify-between">
                         <Label for="password">Password</Label>
                         <TextLink
-                            v-if="canResetPassword"
+                            v-if="true"
                             :href="request()"
                             class="text-sm"
                             :tabindex="5"
@@ -74,13 +83,14 @@ defineProps<{
                         :tabindex="2"
                         autocomplete="current-password"
                         placeholder="Password"
+                        v-model="password"
                     />
                     <InputError :message="errors.password" />
                 </div>
 
                 <div class="flex items-center justify-between">
                     <Label for="remember" class="flex items-center space-x-3">
-                        <Checkbox id="remember" name="remember" :tabindex="3" />
+                        <Checkbox id="remember" name="remember" :tabindex="3" v-model="remember" />
                         <span>Remember me</span>
                     </Label>
                 </div>
@@ -89,11 +99,11 @@ defineProps<{
                     type="submit"
                     class="mt-4 w-full"
                     :tabindex="4"
-                    :disabled="processing"
+                    :disabled="loading"
                     data-test="login-button"
                 >
                     <LoaderCircle
-                        v-if="processing"
+                        v-if="loading"
                         class="h-4 w-4 animate-spin"
                     />
                     Log in
@@ -104,6 +114,6 @@ defineProps<{
                 Don't have an account?
                 <TextLink :href="register()" :tabindex="5">Sign up</TextLink>
             </div>
-        </Form>
+        </form>
     </AuthBase>
 </template>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { registerActions } from '@/helpers/routes/auth';
+import { register as registerApi } from '@/api/auth';
 import InputError from '@/components/InputError.vue';
 import TextLink from '@/components/TextLink.vue';
 import { Button } from '@/components/ui/button';
@@ -7,32 +7,38 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AuthBase from '@/layouts/AuthLayout.vue';
 import { login } from '@/routes';
-import { useForm, Head } from '@inertiajs/vue3';
+import { Head } from '@inertiajs/vue3';
 import { LoaderCircle } from 'lucide-vue-next';
 
-// Use Inertia's useForm for better CSRF handling
-const form = useForm({
-    name: '',
-    email: '',
-    password: '',
-    password_confirmation: ''
-});
+import { ref } from 'vue';
 
-const submit = async () => {
-    // Get CSRF cookie first for cross-origin requests (development only)
-    if (import.meta.env.DEV) {
-        try {
-            await fetch('/sanctum/csrf-cookie', {
-                method: 'GET',
-                credentials: 'include',
-            });
-        } catch (error) {
-            console.error('Failed to get CSRF cookie:', error);
+const name = ref('');
+const email = ref('');
+const password = ref('');
+const password_confirmation = ref('');
+const loading = ref(false);
+const errors = ref<{ name?: string; email?: string; password?: string; password_confirmation?: string }>({});
+
+const handleRegister = async () => {
+    loading.value = true;
+    errors.value = {};
+    try {
+        await registerApi({
+            name: name.value,
+            email: email.value,
+            password: password.value,
+            password_confirmation: password_confirmation.value,
+        });
+        window.location.href = '/dashboard';
+    } catch (error: any) {
+        if (error.response && error.response.data && error.response.data.errors) {
+            errors.value = error.response.data.errors;
+        } else {
+            errors.value = { email: 'Registration failed' };
         }
+    } finally {
+        loading.value = false;
     }
-
-    // Submit the form
-    form.post('/register');
 };
 </script>
 
@@ -43,10 +49,7 @@ const submit = async () => {
     >
         <Head title="Register" />
 
-        <form
-            @submit.prevent="submit"
-            class="flex flex-col gap-6"
-        >
+        <form @submit.prevent="handleRegister" class="flex flex-col gap-6">
             <div class="grid gap-6">
                 <div class="grid gap-2">
                     <Label for="name">Name</Label>
@@ -59,9 +62,9 @@ const submit = async () => {
                         autocomplete="name"
                         name="name"
                         placeholder="Full name"
-                        v-model="form.name"
+                        v-model="name"
                     />
-                    <InputError :message="form.errors.name" />
+                    <InputError :message="errors.name" />
                 </div>
 
                 <div class="grid gap-2">
@@ -74,9 +77,9 @@ const submit = async () => {
                         autocomplete="email"
                         name="email"
                         placeholder="email@example.com"
-                        v-model="form.email"
+                        v-model="email"
                     />
-                    <InputError :message="form.errors.email" />
+                    <InputError :message="errors.email" />
                 </div>
 
                 <div class="grid gap-2">
@@ -89,9 +92,9 @@ const submit = async () => {
                         autocomplete="new-password"
                         name="password"
                         placeholder="Password"
-                        v-model="form.password"
+                        v-model="password"
                     />
-                    <InputError :message="form.errors.password" />
+                    <InputError :message="errors.password" />
                 </div>
 
                 <div class="grid gap-2">
@@ -104,20 +107,20 @@ const submit = async () => {
                         autocomplete="new-password"
                         name="password_confirmation"
                         placeholder="Confirm password"
-                        v-model="form.password_confirmation"
+                        v-model="password_confirmation"
                     />
-                    <InputError :message="form.errors.password_confirmation" />
+                    <InputError :message="errors.password_confirmation" />
                 </div>
 
                 <Button
                     type="submit"
                     class="mt-2 w-full"
                     tabindex="5"
-                    :disabled="form.processing"
+                    :disabled="loading"
                     data-test="register-user-button"
                 >
                     <LoaderCircle
-                        v-if="form.processing"
+                        v-if="loading"
                         class="h-4 w-4 animate-spin"
                     />
                     Create account
